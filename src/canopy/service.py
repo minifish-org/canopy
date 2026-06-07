@@ -160,12 +160,36 @@ class CanopyService:
 
         def rank(candidate: LoopCandidate) -> tuple:
             score = candidate.direction_score
+            car_free_pct = candidate.result.audit().get("car_free_pct")
+            car_free_pct = float(car_free_pct) if car_free_pct is not None else 0.0
             if score is None:
-                return (candidate.target_error_pct, candidate.attempt, candidate.seed)
+                if candidate.target_error_pct <= tolerance:
+                    return (0, -car_free_pct, candidate.target_error_pct, candidate.attempt)
+                return (1, candidate.target_error_pct, -car_free_pct, candidate.attempt)
+            direction_ok = score >= 0.55
+            if candidate.target_error_pct <= tolerance and direction_ok:
+                return (
+                    0,
+                    -car_free_pct,
+                    -score,
+                    candidate.target_error_pct,
+                    candidate.attempt,
+                )
             if candidate.target_error_pct <= tolerance:
-                return (0, -score, candidate.target_error_pct, candidate.attempt)
+                return (
+                    1,
+                    -score,
+                    -car_free_pct,
+                    candidate.target_error_pct,
+                    candidate.attempt,
+                )
             direction_penalty = (1.0 - score) * 20.0
-            return (1, candidate.target_error_pct + direction_penalty, candidate.attempt)
+            return (
+                2,
+                candidate.target_error_pct + direction_penalty,
+                -car_free_pct,
+                candidate.attempt,
+            )
 
         return sorted(candidates, key=rank)[0]
 
