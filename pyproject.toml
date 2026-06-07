@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "canopy-pcn"
+version = "0.1.0"
+description = "Local MCP server for PCN-preferred cycling and walking routes in Singapore."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "AGPL-3.0-or-later"
+authors = [
+  { name = "Canopy contributors" }
+]
+dependencies = [
+  "mcp>=1.9.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0"
+]
+
+[project.scripts]
+canopy-mcp = "canopy.server:main"
+canopy-gh-health = "canopy.health:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

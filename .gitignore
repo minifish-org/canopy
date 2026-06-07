@@ -1,0 +1,21 @@
+.DS_Store
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+
+# Local outputs and credentials.
+outputs/
+.env
+.onemap-token.json
+
+# Keep large GraphHopper artifacts out of this repo.
+*.osm.pbf
+graph-cache/
+*.jar
+logs/
