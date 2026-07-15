@@ -48,7 +48,6 @@ class Settings:
     graphhopper_url: str
     graphhopper_profile: str
     graphhopper_timeout_s: float
-    output_dir: Path
     onemap_base_url: str
     onemap_email: Optional[str]
     onemap_password: Optional[str]
@@ -70,7 +69,6 @@ class Settings:
             ).rstrip("/"),
             graphhopper_profile=os.getenv("CANOPY_GRAPHHOPPER_PROFILE", "bike"),
             graphhopper_timeout_s=_float_env("CANOPY_GRAPHHOPPER_TIMEOUT_S", 15.0),
-            output_dir=_path_env("CANOPY_OUTPUT_DIR", "~/.canopy/gpx"),
             onemap_base_url=os.getenv(
                 "CANOPY_ONEMAP_BASE_URL", "https://www.onemap.gov.sg"
             ).rstrip("/"),

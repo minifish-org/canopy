@@ -1,0 +1,32 @@
+FROM eclipse-temurin:21-jre-jammy
+ARG GRAPHHOPPER_VERSION=11.0
+ARG GRAPHHOPPER_SHA256=b59c024afe172ec6ec85b6327006c3138ec58c7d0bcd26253d0e42853f613def
+# BBBike Singapore extract published 2026-07-15. The upstream URL is mutable,
+# so a changed snapshot fails the build until this digest is reviewed.
+ARG SINGAPORE_PBF_SHA256=385e8b3c5377456cb6c91318e915037a7e60c71c68e0a88b8f4c3839effac65b
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /opt/graphhopper /data/graph-cache \
+    && curl --fail --location --retry 3 \
+      --output /opt/graphhopper/graphhopper.jar \
+      "https://repo1.maven.org/maven2/com/graphhopper/graphhopper-web/${GRAPHHOPPER_VERSION}/graphhopper-web-${GRAPHHOPPER_VERSION}.jar" \
+    && echo "${GRAPHHOPPER_SHA256}  /opt/graphhopper/graphhopper.jar" | sha256sum --check \
+    && curl --fail --location --retry 3 \
+      --output /opt/graphhopper/singapore.osm.pbf \
+      https://download.bbbike.org/osm/bbbike/Singapore/Singapore.osm.pbf \
+    && echo "${SINGAPORE_PBF_SHA256}  /opt/graphhopper/singapore.osm.pbf" | sha256sum --check \
+    && useradd --system --uid 10001 --home-dir /data graphhopper \
+    && chown -R graphhopper:graphhopper /data
+COPY configs/graphhopper/config.docker.yml /opt/graphhopper/config.yml
+COPY configs/graphhopper/pcn.json /opt/graphhopper/pcn.json
+COPY scripts/run_graphhopper_container.sh /usr/local/bin/run-graphhopper
+RUN chmod 0755 /usr/local/bin/run-graphhopper
+ENV JAVA_OPTS="-Xms256m -Xmx1200m"
+WORKDIR /data
+USER graphhopper
+VOLUME ["/data/graph-cache"]
+EXPOSE 8989
+HEALTHCHECK --interval=15s --timeout=5s --start-period=90s --retries=12 \
+  CMD curl --fail --silent http://127.0.0.1:8989/info >/dev/null || exit 1
+ENTRYPOINT ["/usr/local/bin/run-graphhopper"]

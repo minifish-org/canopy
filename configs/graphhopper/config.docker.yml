@@ -1,0 +1,36 @@
+graphhopper:
+  datareader.file: /opt/graphhopper/singapore.osm.pbf
+  graph.location: /data/graph-cache
+
+  profiles:
+    - name: bike
+      custom_model_files: [bike.json, pcn.json]
+
+  profiles_ch: []
+  profiles_lm: []
+  graph.encoded_values: bike_priority, bike_access, roundabout, bike_average_speed, bike_road_access, mtb_rating, hike_rating, country, road_class, bike_network
+  prepare.min_network_size: 200
+  prepare.subnetworks.threads: 1
+  routing.snap_preventions_default: tunnel, bridge, ferry
+  routing.non_ch.max_waypoint_distance: 1000000
+  import.osm.ignored_highways: motorway,trunk
+  graph.dataaccess.default_type: RAM_STORE
+
+server:
+  application_connectors:
+    - type: http
+      port: 8989
+      bind_host: 0.0.0.0
+      max_request_header_size: 50k
+  request_log:
+    appenders: []
+  admin_connectors:
+    - type: http
+      port: 8990
+      bind_host: 127.0.0.1
+
+logging:
+  appenders:
+    - type: console
+      time_zone: UTC
+      log_format: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

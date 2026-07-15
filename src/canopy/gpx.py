@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Dict, Sequence
 from xml.etree import ElementTree as ET
 
 from .geo import geometry_coordinates
@@ -24,12 +22,8 @@ def _fmt(value: float) -> str:
 
 
 def write_gpx_track(
-    coords_lonlat: Sequence[Sequence[float]], name: str, output_dir: Path
-) -> Path:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    path = output_dir / f"{_slug(name)}-{timestamp}.gpx"
-
+    coords_lonlat: Sequence[Sequence[float]], name: str
+) -> str:
     ET.register_namespace("", GPX_NS)
     ET.register_namespace("xsi", XSI_NS)
     gpx = ET.Element(
@@ -54,13 +48,15 @@ def write_gpx_track(
             f"{{{GPX_NS}}}trkpt",
             {"lat": _fmt(float(lat)), "lon": _fmt(float(lon))},
         )
-    tree = ET.ElementTree(gpx)
-    tree.write(path, encoding="utf-8", xml_declaration=True)
-    return path
+    return ET.tostring(gpx, encoding="utf-8", xml_declaration=True).decode("utf-8")
 
 
-def export_gpx(geometry: Any, name: str, output_dir: Path) -> Path:
+def export_gpx(geometry: Any, name: str) -> Dict[str, str]:
     coords = geometry_coordinates(geometry)
     if len(coords) < 2:
         raise ValueError("GPX track export needs at least two points")
-    return write_gpx_track(coords, name, output_dir)
+    return {
+        "filename": f"{_slug(name)}.gpx",
+        "media_type": "application/gpx+xml",
+        "content": write_gpx_track(coords, name),
+    }

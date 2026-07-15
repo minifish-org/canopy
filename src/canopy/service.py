@@ -55,7 +55,6 @@ class CanopyService:
         result = self.graphhopper.route(origin_point, destination_point)
         return self._route_response(
             result,
-            name="canopy-route",
             extra_geometry_properties={
                 "profile": self.settings.graphhopper_profile,
                 "prefer": "pcn",
@@ -79,11 +78,8 @@ class CanopyService:
             raise GraphHopperError("No round_trip candidates were returned by GraphHopper")
         chosen = self._choose_loop_candidate(candidates)
         actual_km = chosen.result.distance_km
-        direction_part = f"-{direction}" if direction else ""
-        name = f"canopy-loop{direction_part}-{actual_km:.1f}km"
         response = self._route_response(
             chosen.result,
-            name=name,
             extra_geometry_properties={
                 "profile": self.settings.graphhopper_profile,
                 "prefer": "pcn",
@@ -196,9 +192,8 @@ class CanopyService:
     def audit_route(self, geometry: Any) -> Dict[str, Any]:
         return audit_route_geometry(geometry)
 
-    def export_gpx(self, geometry: Any, name: str) -> str:
-        path = export_gpx_file(geometry, name, self.settings.output_dir)
-        return str(path)
+    def export_gpx(self, geometry: Any, name: str) -> Dict[str, str]:
+        return export_gpx_file(geometry, name)
 
     def pois_along(
         self,
@@ -220,19 +215,16 @@ class CanopyService:
     def _route_response(
         self,
         result: PathResult,
-        name: str,
         extra_geometry_properties: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         audit = result.audit()
         geometry = result.feature(extra_geometry_properties)
-        gpx_path = self.export_gpx(geometry, name)
         return {
             "distance_km": round(result.distance_km, 3),
             "car_free_pct": audit.get("car_free_pct"),
             "on_road_pct": audit.get("on_road_pct"),
             "by_road_class": audit.get("by_road_class", {}),
             "geometry": geometry,
-            "gpx_path": gpx_path,
             "point_count": len(geometry_coordinates(geometry)),
             "routing_engine": "graphhopper",
             "note": (

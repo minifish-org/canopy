@@ -1,0 +1,15 @@
+.git
+.github
+.venv
+.pytest_cache
+__pycache__
+build
+dist
+*.egg-info
+*.jar
+*.osm.pbf
+graph-cache
+logs
+outputs
+.env
+.onemap-token.json

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Any, Dict, List, Optional
 
 from .service import CanopyService
@@ -13,7 +14,14 @@ except ImportError as exc:  # pragma: no cover - exercised before runtime instal
     ) from exc
 
 
-mcp = FastMCP("canopy")
+mcp = FastMCP(
+    "canopy",
+    host=os.getenv("CANOPY_MCP_HOST", "0.0.0.0"),
+    port=int(os.getenv("CANOPY_MCP_PORT", "8000")),
+    streamable_http_path="/mcp",
+    json_response=True,
+    stateless_http=True,
+)
 service = CanopyService()
 
 
@@ -72,13 +80,13 @@ def audit_route(geometry: Any) -> Dict[str, Any]:
 
 
 @mcp.tool()
-def export_gpx(geometry: Any, name: str) -> str:
-    """Write a dense GPX trk file for a route geometry and return its local path."""
+def export_gpx(geometry: Any, name: str) -> Dict[str, str]:
+    """Return portable GPX content, filename, and media type for a route geometry."""
     return service.export_gpx(geometry, name)
 
 
 def main() -> None:
-    mcp.run()
+    mcp.run(transport="streamable-http")
 
 
 if __name__ == "__main__":

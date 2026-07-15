@@ -2,18 +2,22 @@
 
 Canopy is a local self-hosted MCP server for Singapore cycling and walking route planning. It is built for AI agents, not end users: Claude, Codex, LangChain, and other MCP clients call Canopy tools; the calling agent handles conversation and presentation.
 
-Canopy plans routes with a self-hosted GraphHopper 11 JVM service on `localhost:8989`. The GraphHopper bike profile uses a PCN-biased custom model that strongly prefers cycleways, PCN-like paths, and low-car links while heavily penalizing motor roads. OneMap is used only for geocoding and POIs, never for routing.
+Canopy is a stateless Streamable HTTP MCP server backed by a self-hosted
+GraphHopper 11 service. The GraphHopper bike profile uses a PCN-biased custom
+model that strongly prefers cycleways, PCN-like paths, and low-car links while
+heavily penalizing motor roads. OneMap is used only for geocoding and POIs,
+never for routing.
 
 ## Tools
 
 The MCP server exposes:
 
 - `geocode(query)` returns OneMap address/place matches.
-- `plan_loop(start, distance_km, direction?, prefer="pcn")` returns a PCN-biased round trip with actual distance, audit percentages, dense GeoJSON geometry, and a GPX track path.
+- `plan_loop(start, distance_km, direction?, prefer="pcn")` returns a PCN-biased round trip with actual distance, audit percentages, and dense GeoJSON geometry.
 - `route(origin, destination, prefer="pcn")` returns an A-to-B PCN-biased route.
 - `pois_along(geometry, types=[...])` returns OneMap theme POIs near a route corridor.
 - `audit_route(geometry)` computes car-free/on-road percentages from Canopy route geometry.
-- `export_gpx(geometry, name)` writes a dense GPX `<trk>` file.
+- `export_gpx(geometry, name)` returns a portable filename, media type, and dense GPX `<trk>` content. It never exposes a host path.
 
 The `route` tool uses `origin` and `destination` parameter names because `from` is a Python reserved word.
 
@@ -24,15 +28,15 @@ The `route` tool uses `origin` and `destination` parameter names because `from` 
 - OneMap routing is intentionally unused because it cannot express the PCN preference.
 - There is no bundled web UI or turn-by-turn navigation. Downstream apps can load the generated GPX track, for example OsmAnd "Navigate by Track" or CoMaps visual following.
 
-## Local Layout
+## Containers
 
-Large runtime artifacts stay outside this repo:
+The canonical deployment consists of two images:
 
-- `~/pcn-lab/graphhopper-web-11.0.jar`
-- `~/pcn-lab/singapore.osm.pbf`
-- `~/pcn-lab/graph-cache/`
+- `ghcr.io/minifish-org/canopy` serves Streamable HTTP MCP on `/mcp`.
+- `ghcr.io/minifish-org/canopy-graphhopper` serves routing internally on port 8989.
 
-The repo contains only code, launch scripts, and the GraphHopper config/custom model.
+The GraphHopper image pins the JVM artifact and Singapore OSM snapshot by
+SHA-256. Only its generated graph cache is persisted.
 
 ## Install
 
@@ -100,28 +104,29 @@ export CANOPY_POI_THEME_MAP='{"toilet":["public_toilets"],"bicycle_parking":["bi
 
 ## MCP Client Config
 
-For stdio-based MCP clients, point them at:
-
-```bash
-/Users/yusp/work/canopy/.venv/bin/canopy-mcp
-```
+Connect MCP clients to `http://localhost:8000/mcp` in local Docker or
+`http://canopy:8000/mcp` from another service on the Compose network. Canopy
+has no stdio deployment path.
 
 Example request an agent can decompose into tool calls:
 
 > Plan a low-car loop from Eunos, heading east, about 20 km, and give me the GPX.
 
-The agent should call `plan_loop(start="Eunos", distance_km=20, direction="east")`. The result includes `car_free_pct`, dense route geometry, and `gpx_path`.
+The agent should call `plan_loop(start="Eunos", distance_km=20, direction="east")`.
+If a GPX is required, it then calls `export_gpx` and writes the returned
+`content` through its artifact capability.
 
 ## LangChain
 
-LangChain can consume the same server through `langchain-mcp-adapters`; no Canopy-specific LangChain integration is required. Treat Canopy as an MCP server whose command is `.venv/bin/canopy-mcp`.
+LangChain can consume the same Streamable HTTP server through
+`langchain-mcp-adapters`; no Canopy-specific integration is required.
 
 ## Development
 
 Run tests that do not require GraphHopper or OneMap:
 
 ```bash
-python -m unittest
+python -m pytest
 ```
 
 Run a live GraphHopper health check:
