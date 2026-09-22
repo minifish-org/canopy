@@ -78,6 +78,9 @@ The canonical deployment consists of two images:
 - `ghcr.io/minifish-org/canopy` serves Streamable HTTP MCP on `/mcp`.
 - `ghcr.io/minifish-org/canopy-graphhopper` serves routing internally on port 8989.
 
+Prebuilt GHCR packages currently require registry access. The public quick start
+builds from source and does not need registry credentials.
+
 The GraphHopper image pins the JVM artifact and Singapore OSM snapshot by
 SHA-256. Only its generated graph cache is persisted.
 
