@@ -1,0 +1,25 @@
+services:
+  graphhopper:
+    build:
+      context: .
+      dockerfile: Dockerfile.graphhopper
+      args:
+        SINGAPORE_PBF_URL: ${SINGAPORE_PBF_URL:-https://download.bbbike.org/osm/bbbike/Singapore/Singapore.osm.pbf}
+        SINGAPORE_PBF_SHA256: ${SINGAPORE_PBF_SHA256:-07e9a64f73f7d6938a5b66947e476ebed4d62827e58cd4416b3f6af69da0568d}
+    volumes:
+      - graph-cache:/data/graph-cache
+  canopy:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      CANOPY_GRAPHHOPPER_URL: http://graphhopper:8989
+      CANOPY_ONEMAP_TOKEN: ${CANOPY_ONEMAP_TOKEN:-}
+      CANOPY_ONEMAP_EMAIL: ${CANOPY_ONEMAP_EMAIL:-}
+      CANOPY_ONEMAP_PASSWORD: ${CANOPY_ONEMAP_PASSWORD:-}
+      CANOPY_ONEMAP_TOKEN_CACHE: /tmp/canopy/onemap-token.json
+    depends_on:
+      graphhopper:
+        condition: service_healthy
+volumes:
+  graph-cache:

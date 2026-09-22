@@ -1,9 +1,10 @@
 FROM eclipse-temurin:21-jre-jammy
 ARG GRAPHHOPPER_VERSION=11.0
 ARG GRAPHHOPPER_SHA256=b59c024afe172ec6ec85b6327006c3138ec58c7d0bcd26253d0e42853f613def
-# BBBike Singapore extract published 2026-07-15. The upstream URL is mutable,
+# BBBike Singapore extract published 2026-09-19. The upstream URL is mutable,
 # so a changed snapshot fails the build until this digest is reviewed.
-ARG SINGAPORE_PBF_SHA256=385e8b3c5377456cb6c91318e915037a7e60c71c68e0a88b8f4c3839effac65b
+ARG SINGAPORE_PBF_URL=https://download.bbbike.org/osm/bbbike/Singapore/Singapore.osm.pbf
+ARG SINGAPORE_PBF_SHA256=07e9a64f73f7d6938a5b66947e476ebed4d62827e58cd4416b3f6af69da0568d
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl \
     && rm -rf /var/lib/apt/lists/* \
@@ -14,10 +15,11 @@ RUN apt-get update \
     && echo "${GRAPHHOPPER_SHA256}  /opt/graphhopper/graphhopper.jar" | sha256sum --check \
     && curl --fail --location --retry 3 \
       --output /opt/graphhopper/singapore.osm.pbf \
-      https://download.bbbike.org/osm/bbbike/Singapore/Singapore.osm.pbf \
+      "${SINGAPORE_PBF_URL}" \
     && echo "${SINGAPORE_PBF_SHA256}  /opt/graphhopper/singapore.osm.pbf" | sha256sum --check \
     && useradd --system --uid 10001 --home-dir /data graphhopper \
     && chown -R graphhopper:graphhopper /data
+COPY THIRD_PARTY_NOTICES.md /opt/graphhopper/THIRD_PARTY_NOTICES.md
 COPY configs/graphhopper/config.docker.yml /opt/graphhopper/config.yml
 COPY configs/graphhopper/pcn.json /opt/graphhopper/pcn.json
 COPY scripts/run_graphhopper_container.sh /usr/local/bin/run-graphhopper
